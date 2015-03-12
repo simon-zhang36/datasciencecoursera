@@ -1,30 +1,51 @@
-## Quiz 1
-#Question 1
-fileUrl <- 'https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv'
-download.file(fileUrl,destfile='./1.csv',method='curl')
-CommunityData <- read.csv('./Getting and Cleaning Data/1.csv')
-head(CommunityData)
-sum(CommunityData$VAL >= 24,na.rm= TRUE)
+url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv "
+download.file(url,destfile="./data/housing.csv",method="curl")
 
-#Question 3
+getwd()
+setwd('./Getting and Cleaning Data/')
+#1
+d1 <- read.csv('./data/housing.csv')
+head(d1,3)
+sum(d1$VAL >23,na.rm=T)
+
+#2
+summary(d1$FES)
+head(d1$FES)
+
+#3
 library(xlsx)
-fileUrl2 <- 'https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FDATA.gov_NGAP.xlsx '
-download.file(fileUrl2,destfile='./Getting and Cleaning Data/2.xlsx',method='curl')
-rows = 18:23
-cols = 7:15
-dat <- read.xlsx('./Getting and Cleaning Data/2.xlsx',sheetIndex=1,rowIndex=rows,colIndex=cols,header=TRUE)
-sum(dat$Zip*dat$Ext,na.rm=TRUE)
+d2.url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FDATA.gov_NGAP.xlsx"
+download.file(d2.url,destfile="./data/gov_NGAP.xlsx",method="curl")
 
-#Question 4
+rowIndex <- 18:23
+colIndex <- 7:15
+dat <- read.xlsx('./data/gov_NGAP.xlsx',sheetIndex = 1,
+                 rowIndex=rowIndex,colIndex=colIndex)
+sum(dat$Zip*dat$Ext,na.rm=T) 
+
+#4 check help page "http://stackoverflow.com/questions/23584514/error-xml-content-does-not-seem-to-be-xml-r-3-1-0"
 library(XML)
-fileUrl3 <- 'https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml'
+d3.url <- "http://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml"
+d3 <- xmlTreeParse(d3.url,useInternal =TRUE)
 
-doc <- xmlTreeParse('./3.xml',useInternalNodes=TRUE)
-rootNode <- xmlRoot(doc)
+rootNode <- xmlRoot(d3)
 xmlName(rootNode)
 names(rootNode)
-zip <- xpathSApply(doc,"//zipcode",xmlValue)
-sum(zip=='21231')
+zipcode <- xpathSApply(rootNode,"//zipcode",xmlValue)
+sum(zipcode == '21231')
 
-#Question 5
-DT <- fread('./Getting and Cleaning Data/1.csv')
+#5
+library(data.table)
+d4.url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06pid.csv"
+download.file(d4.url,destfile = './data/06pid.csv',method='curl')
+DT <- fread('./data/06pid.csv')
+
+a <- c(mean(DT[DT$SEX==1,]$pwgtp15) && mean(DT[DT$SEX==2,]$pwgtp15),
+       mean(DT$pwgtp15,by=DT$SEX),
+       DT[,mean(pwgtp15),by=SEX],
+       tapply(DT$pwgtp15,DT$SEX,mean),
+       sapply(split(DT$pwgtp15,DT$SEX),mean))
+
+system.time(mean(DT[DT$SEX==1,]$pwgtp15) && mean(DT[DT$SEX==2,]$pwgtp15))
+system.time(mean(DT$pwgtp15,by=DT$SEX))
+system.time(DT[,mean(pwgtp15),by=SEX])
