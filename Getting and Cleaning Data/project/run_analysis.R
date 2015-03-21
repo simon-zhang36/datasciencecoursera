@@ -29,3 +29,26 @@ data <- rbind(train,test)
 labels <- read.table("./data/activity_labels.txt",head=FALSE,col.names = c("activity_label","activity"))
 data <- join(data,labels,by="activity_label")
 data <- data[c(562:564,1:561)]
+
+# extract columns which contain mean and std values -- ignore letter case
+measures.mean.index <- grep ( "mean", colnames(data), ignore.case = TRUE )
+measures.std.index <- grep ( "std", colnames(data), ignore.case = TRUE)
+data_mean_std <- data[ c ( 1:3, measures.mean.index, measures.std.index ) ]
+
+# melt data set
+library(reshape2)
+data.melt <- melt(data_mean_std,
+                  id = c("Subject","activity_label","activity"),
+                  measure.vars = c(4:89),
+                  variable.name = "features")
+
+# dcast by Subject, activity, eliminate activity_label, derive mean for all mean and std features
+data.tidy <- dcast(data.melt,
+                   Subject + activity ~ features,
+                   mean)   
+features.tidy <- paste("Mean of ",colnames(data.tidy)[3:88])
+colnames(data.tidy)[3:88] <- features.tidy
+
+# export the tidy data
+write.table(data.tidy,file = "./tidydata.txt",row.names = FALSE)
+write.csv(data.tidy,file = "tidydata.csv")
