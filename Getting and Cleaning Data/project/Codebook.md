@@ -38,4 +38,4 @@ For details about the original features' data set (description and raw 3-axial
 signals), look at the respective metadata file (data/features_info.txt
 and REAMDE.txt).
 
-The features in the final tidydata.csv/tidydata.txt in the mean of the 86 features shown above(excluding the Subject and activity value)
+The features in the final tidydata.txt are the mean of the 86 features shown above(excluding the Subject and activity value), which are  "Mean of " plus the feature names shown above.
