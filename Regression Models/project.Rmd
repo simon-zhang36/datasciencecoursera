@@ -1,0 +1,67 @@
+---
+title: "Motor Trend - Auto Transmission Analysis"
+author: "Zhang,Xiaoyu"
+date: "Saturday, April 25, 2015"
+output: pdf_document
+---
+# Executive Summary
+Motor Trend, a magazine about the automobile industry is interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:
+- “Is an automatic or manual transmission better for MPG”
+- "Quantify the MPG difference between automatic and manual transmissions"
+
+## Data Descriptive
+The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models).
+- mpg : Miles/(US) gallon
+- cyl : Number of cylinders
+- disp : Displacement (cu.in.)
+- hp : Gross horsepower
+- drat : Rear axle ratio
+- wt : Weight (lb/1000)
+- qsec : 1/4 mile time
+- vs : V/S
+- am : Transmission (0 = automatic, 1 = manual)
+- gear : Number of forward gears
+- carb : Number of carburetors
+
+# Main Analysis
+## Exploratory Analysis
+```{r}
+data(mtcars)
+summary(mtcars[,c("mpg","am")])
+```
+## Data Pre-processing
+Transform the cylinder and transmission data to factors
+```{r}
+mtcars <- transform(mtcars,cyl = factor(cyl))
+mtcars <- transform(mtcars,am = factor(am,labels = c("Automatic","Manual")))
+
+```
+## Hypothesis Test
+Null: $\beta_{automotic} = \beta_{manual}$ 
+
+When building linear model, coefficient $\beta_{am}$ for $X_{am}$ is interpreted as the difference in the mean whem comparing two groups.
+```{r}
+fit <- lm(mpg ~ am, data = mtcars)
+summary(fit)
+```
+
+## Quantify the Difference
+Build the full model including all variables and select the variables using backward selection to capture the most variability.
+```{r}
+fit2 <- lm(mpg ~ .,data = mtcars)
+fit2.best <- step(fit2,trace = F,k=log(nrow(mtcars)))
+fit2.best
+```
+# Result
+- As we can see from above, the P-value for $\beta_{am}$ is 0.000285 which reject the null hypothesis, which means there is a great difference in different type of transmission
+- The coefficient $\beta_{am}$ is positive which means Manual transmission is better for MPGX
+- The MPG difference is $\beta_{am}$, which is 2.936
+
+## Appendix
+```{r,fig.height=3,fig.width= 4}
+boxplot(mpg ~ am,data = mtcars)
+```
+```{r}
+par(mfrow=c(2,2))
+plot(fit2.best)
+```
