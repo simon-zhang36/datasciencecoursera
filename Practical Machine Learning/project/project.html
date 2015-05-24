@@ -84,18 +84,99 @@ img {
 </div>
 <div id="processing" class="section level1">
 <h1>Processing</h1>
-<div id="load-the-data" class="section level2">
-<h2>Load the data</h2>
-<pre class="r"><code>library(caret)</code></pre>
-<pre><code>## Loading required package: lattice
+<div id="load-the-data-and-required-library" class="section level2">
+<h2>Load the data and required library</h2>
+<pre class="r"><code>require(caret)</code></pre>
+<pre><code>## Loading required package: caret
+## Loading required package: lattice
 ## Loading required package: ggplot2</code></pre>
+<pre class="r"><code>require(randomForest)</code></pre>
+<pre><code>## Loading required package: randomForest
+## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.</code></pre>
 <pre class="r"><code>training &lt;- read.csv(&quot;./pml-training.csv&quot;, na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;, &quot;&quot;))
-testing &lt;- read.csv(&quot;./pml-training.csv&quot;, na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;, &quot;&quot;))</code></pre>
+testing &lt;- read.csv(&quot;./pml-testing.csv&quot;, na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;, &quot;&quot;))</code></pre>
 </div>
 <div id="cleaning-the-data" class="section level2">
 <h2>Cleaning the data</h2>
-<p>After thinking deep about the question and looking at the dataset, the columns which are unrelevent to the question itself or are comprised of very dirty data could be removed: * With majority of missing value (above 95%) * With user and time information (“user_name”, “raw_timestamp_part_1”,“raw_timestamp_part_2”,“cvtd_timestamp”,“new_window”,“num_window”) * With useless index number</p>
+<p>After thinking deep about the question and looking at the dataset, the columns which are irrelevent to the question itself or are comprised of very dirty data could be removed:</p>
+<ul>
+<li>With majority of missing value (above 95%)</li>
+<li>With user and time information (“user_name”, “raw_timestamp_part_1”,“raw_timestamp_part_2”,“cvtd_timestamp”,“new_window”,“num_window”)</li>
+<li>With useless index number</li>
+</ul>
+<pre class="r"><code>set.seed(1234)
+training &lt;- training[,which(colSums(is.na(training)) &lt;  nrow(training)*0.95)]
+training &lt;- subset(training,select = -(1:7))</code></pre>
+<p>Now we have 53 columns and 19622 observations in our training dataset. ## Feature Selection - Remove redundant features The Caret R packages provides the findCorrelation function which will analyze a correlation matrix of the data’s attributes report on attributes that can be removed.</p>
+<p>Here I remove the attributes with an absolute correlation of 0.75 and higher to reduce the features</p>
+<pre class="r"><code>correlationMatrix &lt;- cor(training[,1:52])
+highlyCorrelated &lt;- findCorrelation(correlationMatrix,cutoff=0.75)
+
+training &lt;- training[,-highlyCorrelated]</code></pre>
+<p>Now we have 33 columns in total including the response. ## Patitioning the data The training data set contains 33 variables and 19622 obs. The testing data set contains 33 variables and 20 obs. In order to perform cross-validation, the training data set is partionned into 2 sets: subTraining (60%) and subTest (40%). This will be performed using random subsampling without replacement.</p>
+<pre class="r"><code>inTrain &lt;- createDataPartition(y=training$class,p=0.6,list=FALSE)
+training.training &lt;- training[inTrain,]
+training.testing &lt;- training[-inTrain,]</code></pre>
 </div>
+<div id="fitting-model-with-random-forests" class="section level2">
+<h2>Fitting Model with Random Forests</h2>
+<pre class="r"><code>control &lt;- trainControl(method=&quot;cv&quot;,allowParallel=TRUE)
+modFit &lt;- train(classe ~. ,data=training.training,method=&quot;rf&quot;,trControl=control)</code></pre>
+</div>
+<div id="evluate-on-test-data" class="section level2">
+<h2>Evluate on test data</h2>
+<pre class="r"><code>pred1 &lt;- predict(modFit,training.testing)
+confusionMatrix(pred1,training.testing$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 2232   10    0    0    0
+##          B    0 1501   10    0    0
+##          C    0    6 1349   28    3
+##          D    0    0    9 1257    2
+##          E    0    1    0    1 1437
+## 
+## Overall Statistics
+##                                          
+##                Accuracy : 0.9911         
+##                  95% CI : (0.9887, 0.993)
+##     No Information Rate : 0.2845         
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
+##                                          
+##                   Kappa : 0.9887         
+##  Mcnemar's Test P-Value : NA             
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            1.0000   0.9888   0.9861   0.9774   0.9965
+## Specificity            0.9982   0.9984   0.9943   0.9983   0.9997
+## Pos Pred Value         0.9955   0.9934   0.9733   0.9913   0.9986
+## Neg Pred Value         1.0000   0.9973   0.9971   0.9956   0.9992
+## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
+## Detection Rate         0.2845   0.1913   0.1719   0.1602   0.1832
+## Detection Prevalence   0.2858   0.1926   0.1767   0.1616   0.1834
+## Balanced Accuracy      0.9991   0.9936   0.9902   0.9879   0.9981</code></pre>
+<p>The accuracy of the model is 0.9911. Our Test data set comprises 20 cases. With an accuracy above 99% on our cross-validation data, we can expect that very few, or none, of the test samples will be missclassified. # Predict on test data</p>
+<pre class="r"><code>predictfinal &lt;- predict(modFit, testing)
+predictfinal</code></pre>
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E</code></pre>
+</div>
+</div>
+<div id="submission" class="section level1">
+<h1>Submission</h1>
+<pre class="r"><code>pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0(&quot;problem_id_&quot;,i,&quot;.txt&quot;)
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(predictfinal)</code></pre>
 </div>
 
 
