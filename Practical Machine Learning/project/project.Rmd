@@ -1,0 +1,57 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Zhang,Xiaoyu"
+date: "Sunday, May 24, 2015"
+output: html_document
+---
+# Introduction
+## Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+## Data Source
+The training data for this project are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment. 
+
+# Processing
+## Load the data
+```{r}
+training <- read.csv("./pml-training.csv", na.strings=c("NA","#DIV/0!", ""))
+testing <- read.csv("./pml-training.csv", na.strings=c("NA","#DIV/0!", ""))
+```
+## Cleaning the data
+After thinking deep about the question and looking at the dataset, the columns which are irrelevent to the question itself or are comprised of very dirty data could be removed:
+
+- With majority of missing value (above 95%)
+- With user and time information ("user_name", "raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp","new_window","num_window")
+- With useless index number
+```{r}
+training <- training[,which(colSums(is.na(training)) <  nrow(training)*0.95)]
+training <- subset(training,select = -(1:7))
+```
+Now we have 53 columns and 19622 observations in our training dataset.
+## Feature Selection
+We use a popular automatic method for feature selection provided by the caret R package called Recursive Feature Elimination or RFE. We then use the randomForest selection function to control the RFE process. We then fit the models with subset sizes of 5,10,15,20,25,30,35,40,45,50,53
+```{r}
+library(caret)
+library(randomForest)
+control <- rfeControl(functions=rfFuncs,method="cv",number=10)
+results <- rfe(training[,1:52],training[,53],sizes=10,rfeControl=control)
+```
+## Patitioning the data
+```{r}
+inTrain <- createDataPartition(y=training$class,p=0.6,list=FALSE)
+training.training <- training[inTrain,]
+training.testing <- training[-inTrain,]
+```
+## Fitting Model with Random Forests
+```{r}
+
+modFit <- train(classe ~. ,data=training.training,method="rf")
+```
