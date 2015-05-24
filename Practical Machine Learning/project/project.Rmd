@@ -20,10 +20,12 @@ https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment. 
 
 # Processing
-## Load the data
+## Load the data and required library
 ```{r}
+require(caret)
+require(randomForest)
 training <- read.csv("./pml-training.csv", na.strings=c("NA","#DIV/0!", ""))
-testing <- read.csv("./pml-training.csv", na.strings=c("NA","#DIV/0!", ""))
+testing <- read.csv("./pml-testing.csv", na.strings=c("NA","#DIV/0!", ""))
 ```
 ## Cleaning the data
 After thinking deep about the question and looking at the dataset, the columns which are irrelevent to the question itself or are comprised of very dirty data could be removed:
@@ -32,26 +34,57 @@ After thinking deep about the question and looking at the dataset, the columns w
 - With user and time information ("user_name", "raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp","new_window","num_window")
 - With useless index number
 ```{r}
+set.seed(1234)
 training <- training[,which(colSums(is.na(training)) <  nrow(training)*0.95)]
 training <- subset(training,select = -(1:7))
 ```
 Now we have 53 columns and 19622 observations in our training dataset.
-## Feature Selection
-We use a popular automatic method for feature selection provided by the caret R package called Recursive Feature Elimination or RFE. We then use the randomForest selection function to control the RFE process. We then fit the models with subset sizes of 5,10,15,20,25,30,35,40,45,50,53
+## Feature Selection - Remove redundant features
+The Caret R packages provides the findCorrelation function which will analyze a correlation matrix of the data's attributes report on attributes that can be removed.
+
+Here I remove the attributes with an absolute correlation of 0.75 and higher to reduce the features
 ```{r}
-library(caret)
-library(randomForest)
-control <- rfeControl(functions=rfFuncs,method="cv",number=10)
-results <- rfe(training[,1:52],training[,53],sizes=10,rfeControl=control)
+correlationMatrix <- cor(training[,1:52])
+highlyCorrelated <- findCorrelation(correlationMatrix,cutoff=0.75)
+
+training <- training[,-highlyCorrelated]
 ```
+Now we have 33 columns in total including the response.
 ## Patitioning the data
+The training data set contains 33 variables and 19622 obs.
+The testing data set contains 33 variables and 20 obs.
+In order to perform cross-validation, the training data set is partionned into 2 sets: subTraining (60%) and subTest (40%).
+This will be performed using random subsampling without replacement.
 ```{r}
 inTrain <- createDataPartition(y=training$class,p=0.6,list=FALSE)
 training.training <- training[inTrain,]
 training.testing <- training[-inTrain,]
 ```
 ## Fitting Model with Random Forests
+```{r,cache=TRUE}
+control <- trainControl(method="cv",allowParallel=TRUE)
+modFit <- train(classe ~. ,data=training.training,method="rf",trControl=control)
+```
+## Evluate on test data
 ```{r}
+pred1 <- predict(modFit,training.testing)
+confusionMatrix(pred1,training.testing$classe)
+```
+The accuracy of the model is 0.9911. Our Test data set comprises 20 cases. With an accuracy above 99% on our cross-validation data, we can expect that very few, or none, of the test samples will be missclassified.
+# Predict on test data
+```{r}
+predictfinal <- predict(modFit, testing)
+predictfinal
+```
+# Submission
+```{r}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
 
-modFit <- train(classe ~. ,data=training.training,method="rf")
+pml_write_files(predictfinal)
 ```
