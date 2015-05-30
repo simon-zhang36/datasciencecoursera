@@ -1,0 +1,62 @@
+---
+title: "ToothGrowth Analysis"
+author: "Zhang,Xiaoyu"
+date: "Friday, May 22, 2015"
+output: pdf_document
+---
+
+# Overview
+Now in the second portion of the class, we’re going to analyze the ToothGrowth data in the R datasets package.
+
+1. Load the ToothGrowth data and perform some basic exploratory data analyses
+2. Provide a basic summary of the data.
+3. Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. (Only use the techniques from class, even if there’s other approaches worth considering)
+4. State your conclusions and the assumptions needed for your conclusions.
+
+# Data Description
+The ToothGrowth dataset targets to analyze the effect of vitamin C on tooth growth in guinea pigs.
+The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).
+## Load the dataset
+```{r}
+data(ToothGrowth)
+head(ToothGrowth)
+```
+## Summary the dataset
+```{r}
+summary(ToothGrowth)
+```
+the dataset has 60 samples. 30 samples are treated with orange juice as supplement while the other 30 ones use ascorbic acid(VC) as supplement. Each 20 samples are treated with a dose level of 0.5mg,1mg,2mg.
+## Compare Tooth Growth by Supp and Dose.
+```{r}
+library(ggplot2)
+ToothGrowth <- transform(ToothGrowth,dose = factor(dose))
+plot1 <- ggplot(ToothGrowth,aes(x=dose,y=len,fill=dose))
+plot1 + geom_boxplot() + 
+        facet_grid(.~supp) +
+        ggtitle("Effect of Dosage and Supplement Type on Tooth Growth")
+```
+From the box plot it is clear that the increase in dose level (0.5 mg to 2 mg) results in the increase in tooth growth when controlling the supplement type. For low dose levels (less than 2mg) orange juice may have larger effect on tooth growth than ascorbic acid. A further analysis will be taken to support the conclusion.
+
+# Statistical Analysis
+
+## T test on two groups using different supplement
+```{r}
+data.OJ <- subset(ToothGrowth, supp == "OJ")
+data.VC = subset(ToothGrowth, supp == "VC")
+t.test(data.OJ$len,data.VC$len,paired = FALSE, var.equal = TRUE)
+```
+The results shows that the hypothesis that there is equal effect on the growth of tooth of two different supplement is rejected with p-value = 0.06039 and 95% confidence interval at [-0.1670064,7.5670064]
+
+## T test on two groups using different supplement and high level dose(2mg)
+```{r}
+data.OJ.highdose <- subset(data.OJ, dose == 2)
+data.VC.highdose = subset(data.VC, dose == 2)
+t.test(data.OJ.highdose$len,data.VC.highdose$len,paired = FALSE, var.equal = TRUE)
+```
+The results shows that the hypothesis that there is equal effect on the growth of tooth of two different supplement when using high level dose is accepted with p-value = 0.9637 and 95% confidence interval at [-3.722999,3.562999]
+
+# Conclusion
+1. Regardless of the supplement type, with increased dosage the tooth growth increases
+2. Give lower level of dosage(less than 2mg),orange juice provides higher tooth growth than ascorbic acid.
+3. When dosage level goes higher(equal to 2mg), there is no clear difference on tooth growth between two supplement types.
+
