@@ -39,6 +39,7 @@ training <- training[,which(colSums(is.na(training)) <  nrow(training)*0.95)]
 training <- subset(training,select = -(1:7))
 ```
 Now we have 53 columns and 19622 observations in our training dataset.
+
 ## Feature Selection - Remove redundant features
 The Caret R packages provides the findCorrelation function which will analyze a correlation matrix of the data's attributes report on attributes that can be removed.
 
@@ -50,6 +51,7 @@ highlyCorrelated <- findCorrelation(correlationMatrix,cutoff=0.75)
 training <- training[,-highlyCorrelated]
 ```
 Now we have 33 columns in total including the response.
+
 ## Patitioning the data
 The training data set contains 33 variables and 19622 obs.
 The testing data set contains 33 variables and 20 obs.
@@ -60,22 +62,26 @@ inTrain <- createDataPartition(y=training$class,p=0.6,list=FALSE)
 training.training <- training[inTrain,]
 training.testing <- training[-inTrain,]
 ```
+
 ## Fitting Model with Random Forests
 ```{r,cache=TRUE}
 control <- trainControl(method="cv",allowParallel=TRUE)
 modFit <- train(classe ~. ,data=training.training,method="rf",trControl=control)
 ```
+
 ## Evluate on test data
 ```{r}
 pred1 <- predict(modFit,training.testing)
 confusionMatrix(pred1,training.testing$classe)
 ```
 The accuracy of the model is 0.9911. Our Test data set comprises 20 cases. With an accuracy above 99% on our cross-validation data, we can expect that very few, or none, of the test samples will be missclassified.
+
 # Predict on test data
 ```{r}
 predictfinal <- predict(modFit, testing)
 predictfinal
 ```
+
 # Submission
 ```{r}
 pml_write_files = function(x){
