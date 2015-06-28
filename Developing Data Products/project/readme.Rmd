@@ -39,17 +39,13 @@ Fit a curve to the data      Fit a line on the plot
 
 <<<<<<< HEAD
 Option 1: cannot upload to shinyapp.io. Got an error "Unhandled Exception: mkdir /mnt/docker/volumes/0ed42398637fc1ba9ad4f8761891a67535302bae71b1b886a65008fcde488b2c: too many links"
-=======
-Option 1: Direct link: click [here](http://lincrampton.shinyapps.io/time2retire/)
->>>>>>> 9842fe524eaca3f2ca349b38925ece4999512d0f
 
-Option 2: Download the `server.R` and `ui.R` files and place them in a directory named 'time2retire'. Open an R session and set the working directory to the folder that contains the directory 'time2retire'. Then run the following commands:
+
+Option 2: Download the `server.R` and `ui.R` files and place them in a directory named 'time2retire'. Open an R session and set the working directory to the folder. Then run the following commands:
 
 ```
 library(shiny)
 <<<<<<< HEAD
 runApp()
-=======
-runApp('time2retire')
->>>>>>> 9842fe524eaca3f2ca349b38925ece4999512d0f
+
 ```
